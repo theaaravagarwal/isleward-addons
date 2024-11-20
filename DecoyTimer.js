@@ -4,7 +4,7 @@
 // @match       https://play.isleward.com/*
 // @match       https://ptr.isleward.com/*
 // @grant       none
-// @version     1.1
+// @version     1.0
 // @author      Siege
 // @description Decoy Timer Queue
 // ==/UserScript==
