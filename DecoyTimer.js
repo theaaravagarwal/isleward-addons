@@ -11,6 +11,7 @@
 
 let ticksPerSecond = 17/7; // ticks per second
 let ticks;
+let show = false;
 let decoyTimers = {};
 let timerUpdateInterval;
 
@@ -33,6 +34,7 @@ defer(() => {
             if (!inv) return;
             for (let item in inv) {
                 if (inv[item].name === "Nyxaliss' Nock") {
+                    let show = !false;
                     ticks = inv[item].effects[0].rolls.castSpell.duration;
                 }
             }
@@ -44,6 +46,7 @@ defer(() => {
             }
         },
         startDecoyTimer: function(decoyObj) {
+            if (!show) return;
             let seconds = ticks / ticksPerSecond || 0;
             let decoyEndTime = Date.now() + (seconds * 1000);
             let decoyId = decoyObj.id || `decoy-${Date.now() + Math.random()}`;
@@ -75,6 +78,7 @@ defer(() => {
         createQueueDisplay: function() {
             this.queueContainer = document.createElement('div');
             this.queueContainer.id = 'decoy-timer-queue';
+            this.queueContainer.style.display = show ? 'block' : 'none';
             let savedPosition = JSON.parse(localStorage.getItem('decoyTimerPosition'));
             Object.assign(this.queueContainer.style, {
                 position: 'fixed',
@@ -145,6 +149,7 @@ defer(() => {
             element.addEventListener('mousedown', onMouseDown);
         },
         updateQueueDisplay: function() {
+            this.queueContainer.style.display = show ? 'block' : 'none';
             this.contentArea.innerHTML = "";
             Object.entries(decoyTimers).forEach(([decoyId, timer]) => {
                 let remainingTime = Math.max(0, timer.endTime - Date.now());
