@@ -4,7 +4,7 @@
 // @match       https://play.isleward.com/*
 // @match       https://ptr.isleward.com/*
 // @grant       none
-// @version     1.0
+// @version     1.1
 // @author      Siege
 // @description Decoy Timer Queue
 // ==/UserScript==
@@ -13,6 +13,7 @@ let ticksPerSecond = 17/7; // ticks per second
 let ticks;
 let decoyTimers = {};
 let timerUpdateInterval;
+let hasNock = false;
 
 function defer(method) {
     if (window.jQuery) {
@@ -24,26 +25,29 @@ function defer(method) {
 
 defer(() => {
     addons.register({
-        init: function(events) {
+        init: function (events) {
             events.on('onGetItems', this.onGetItems.bind(this));
             events.on('onGetObject', this.onGetObject.bind(this));
             this.createQueueDisplay();
         },
-        onGetItems: function(inv) {
+        onGetItems: function (inv) {
             if (!inv) return;
+            hasNock = false;
             for (let item in inv) {
                 if (inv[item].name === "Nyxaliss' Nock") {
                     ticks = inv[item].effects[0].rolls.castSpell.duration;
+                    hasNock = true;
                 }
             }
+            this.toggleQueueDisplay();
         },
-        onGetObject: function(obj) {
+        onGetObject: function (obj) {
             if (!obj) return;
             if (obj.name === "Decoy") {
                 this.startDecoyTimer(obj);
             }
         },
-        startDecoyTimer: function(decoyObj) {
+        startDecoyTimer: function (decoyObj) {
             let seconds = ticks / ticksPerSecond || 0;
             let decoyEndTime = Date.now() + (seconds * 1000);
             let decoyId = decoyObj.id || `decoy-${Date.now() + Math.random()}`;
@@ -59,7 +63,7 @@ defer(() => {
                 timerUpdateInterval = setInterval(() => this.updateTimers(), 50);
             }
         },
-        updateTimers: function() {
+        updateTimers: function () {
             let currentTime = Date.now();
             for (let [decoyId, timer] of Object.entries(decoyTimers)) {
                 if (timer.endTime <= currentTime) {
@@ -72,7 +76,7 @@ defer(() => {
                 timerUpdateInterval = null;
             }
         },
-        createQueueDisplay: function() {
+        createQueueDisplay: function () {
             this.queueContainer = document.createElement('div');
             this.queueContainer.id = 'decoy-timer-queue';
             let savedPosition = JSON.parse(localStorage.getItem('decoyTimerPosition'));
@@ -89,6 +93,7 @@ defer(() => {
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
                 cursor: 'move',
+                display: 'none',
             });
             const header = document.createElement('div');
             header.innerHTML = "<strong>Decoy Timer</strong>";
@@ -109,7 +114,7 @@ defer(() => {
             this.makeDraggable(this.queueContainer);
         },
 
-        makeDraggable: function(element) {
+        makeDraggable: function (element) {
             let isDragging = false;
             let offsetX = 0, offsetY = 0;
             const onMouseDown = (e) => {
@@ -144,7 +149,14 @@ defer(() => {
 
             element.addEventListener('mousedown', onMouseDown);
         },
-        updateQueueDisplay: function() {
+        toggleQueueDisplay: function () {
+            if (hasNock) {
+                this.queueContainer.style.display = 'block';
+            } else {
+                this.queueContainer.style.display = 'none';
+            }
+        },
+        updateQueueDisplay: function () {
             this.contentArea.innerHTML = "";
             Object.entries(decoyTimers).forEach(([decoyId, timer]) => {
                 let remainingTime = Math.max(0, timer.endTime - Date.now());
@@ -155,7 +167,7 @@ defer(() => {
                 this.contentArea.appendChild(timerElement);
             });
         },
-        formatTime: function(seconds) {
+        formatTime: function (seconds) {
             let wholeSeconds = Math.floor(seconds);
             let milliseconds = Math.floor((seconds - wholeSeconds) * 1000);
             return `${wholeSeconds}:${milliseconds.toString().padStart(3, '0')}`;
